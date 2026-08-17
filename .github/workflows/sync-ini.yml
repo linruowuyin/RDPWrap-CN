@@ -97,19 +97,19 @@ jobs:
           }
 
       - name: 编译中文面板（确保打包产物最新）
-        if: steps.changed.outputs.changed == '1' || steps.hasrelease.outputs.has == '0'
+        if: github.event_name == 'workflow_dispatch' || steps.changed.outputs.changed == '1' || steps.hasrelease.outputs.has == '0'
         shell: pwsh
         run: |
           dotnet build src/RDPCnC.csproj -c Release -p:UseSharedCompilation=false
           Copy-Item -Force 'src/bin/Release/net48/RDPCnC-CN.exe' 'bin/RDPCnC-CN.exe'
 
       - name: 打包发布压缩包
-        if: steps.changed.outputs.changed == '1' || steps.hasrelease.outputs.has == '0'
+        if: github.event_name == 'workflow_dispatch' || steps.changed.outputs.changed == '1' || steps.hasrelease.outputs.has == '0'
         shell: pwsh
         run: ./scripts/build-package.ps1
 
       - name: 发布 GitHub Release
-        if: steps.changed.outputs.changed == '1' || steps.hasrelease.outputs.has == '0'
+        if: github.event_name == 'workflow_dispatch' || steps.changed.outputs.changed == '1' || steps.hasrelease.outputs.has == '0'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
