@@ -3,8 +3,9 @@ name: 同步上游 rdpwrap.ini 并发布更新
 # 说明：
 # - 每天北京时间 00:30 自动运行（也可在 Actions 页面手动触发）
 # - 检查上游 sebaxakerhtc/rdpwrap.ini 是否有更新
-# - 有变化：自动提交 → 打包 zip → 发布 GitHub Release（tag: ini-YYYY-MM-DD）
-# - 无变化：不产生任何提交和发布
+# - 有变化：自动提交 → 编译面板 → 打包 zip → 发布 GitHub Release
+# - 无变化但仓库一个 Release 都没有（首次启动）：也打包发布一版
+# - 版本规则：Release 标签 = ini-YYYY-MM-DD，压缩包名 = RDPWrap-CN-YYYY-MM-DD.zip
 #
 # fork 后必做设置：
 # 1. Actions 标签页启用工作流
@@ -54,10 +55,25 @@ jobs:
           Write-Host "上游最新:  $b"
           if ($a -eq $b) {
             "changed=0" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
-            Write-Host "配置无变化，跳过提交与发布"
+            Write-Host "配置无变化"
           } else {
             "changed=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
             Write-Host "检测到配置更新"
+          }
+
+      - name: 检查仓库是否已有 Release
+        id: hasrelease
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $n = (gh release list --limit 1 | Measure-Object -Line).Lines
+          if ($n -gt 0) {
+            "has=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
+            Write-Host "已存在 Release"
+          } else {
+            "has=0" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
+            Write-Host "仓库还没有 Release，首次启动将打包发布"
           }
 
       - name: 提交新配置
@@ -79,24 +95,21 @@ jobs:
             git pull --rebase origin $branch
             git push origin "HEAD:$branch"
           }
-          $sha = git rev-parse HEAD
-          "sha=$sha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
-          Write-Host "已推送, commit: $sha"
 
       - name: 编译中文面板（确保打包产物最新）
-        if: steps.changed.outputs.changed == '1'
+        if: steps.changed.outputs.changed == '1' || steps.hasrelease.outputs.has == '0'
         shell: pwsh
         run: |
           dotnet build src/RDPCnC.csproj -c Release -p:UseSharedCompilation=false
           Copy-Item -Force 'src/bin/Release/net48/RDPCnC-CN.exe' 'bin/RDPCnC-CN.exe'
 
       - name: 打包发布压缩包
-        if: steps.changed.outputs.changed == '1'
+        if: steps.changed.outputs.changed == '1' || steps.hasrelease.outputs.has == '0'
         shell: pwsh
         run: ./scripts/build-package.ps1
 
       - name: 发布 GitHub Release
-        if: steps.changed.outputs.changed == '1'
+        if: steps.changed.outputs.changed == '1' || steps.hasrelease.outputs.has == '0'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
