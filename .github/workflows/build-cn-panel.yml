@@ -1,0 +1,75 @@
+name: 构建中文配置面板 (RDPCnC-CN.exe)
+
+# 说明：
+# - 当 src/ 下的源码（RDPCnC.cs / csproj）有更新时自动触发
+# - 在 GitHub 的 Windows 云服务器上编译出 exe
+# - 若产物与仓库内 bin/RDPCnC-CN.exe 不一致，自动提交回仓库
+# - 也可在 Actions 页面手动触发
+
+on:
+  push:
+    paths:
+      - 'src/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-cn-panel
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 编译 RDPCnC-CN.exe
+        shell: pwsh
+        run: dotnet build src/RDPCnC.csproj -c Release -p:UseSharedCompilation=false
+
+      - name: 对比仓库内现有 exe
+        id: exechanged
+        shell: pwsh
+        run: |
+          $built = 'src/bin/Release/net48/RDPCnC-CN.exe'
+          $target = 'bin/RDPCnC-CN.exe'
+          if (-not (Test-Path $built)) { throw "编译产物不存在: $built" }
+          $a = (Get-FileHash $built -Algorithm SHA256).Hash
+          $b = if (Test-Path $target) { (Get-FileHash $target -Algorithm SHA256).Hash } else { '' }
+          Write-Host "新编译: $a"
+          Write-Host "仓库内: $b"
+          if ($a -ne $b) {
+            "changed=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
+            Write-Host "产物有变化，准备提交"
+          } else {
+            "changed=0" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
+            Write-Host "产物与仓库一致，跳过提交"
+          }
+
+      - name: 提交新 exe
+        if: steps.exechanged.outputs.changed == '1'
+        shell: pwsh
+        run: |
+          Copy-Item -Force 'src/bin/Release/net48/RDPCnC-CN.exe' 'bin/RDPCnC-CN.exe'
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add bin/RDPCnC-CN.exe
+          git commit -m "build: regenerate RDPCnC-CN.exe"
+          $branch = $env:GITHUB_REF_NAME
+          git push origin "HEAD:$branch"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host '推送冲突，拉取变基后重试'
+            git pull --rebase origin $branch
+            git push origin "HEAD:$branch"
+          }
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: RDPCnC-CN
+          path: bin/RDPCnC-CN.exe

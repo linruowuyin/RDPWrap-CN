@@ -1,0 +1,118 @@
+name: 同步上游 rdpwrap.ini 并发布更新
+
+# 说明：
+# - 每天北京时间 00:30 自动运行（也可在 Actions 页面手动触发）
+# - 检查上游 sebaxakerhtc/rdpwrap.ini 是否有更新
+# - 有变化：自动提交 → 打包 zip → 发布 GitHub Release（tag: ini-YYYY-MM-DD）
+# - 无变化：不产生任何提交和发布
+#
+# fork 后必做设置：
+# 1. Actions 标签页启用工作流
+# 2. Settings → Actions → General → Workflow permissions
+#    选择 "Read and write permissions" 并保存
+
+on:
+  schedule:
+    - cron: '30 16 * * *'   # UTC 16:30 = 北京时间 00:30
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-ini
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: windows-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 下载上游最新 rdpwrap.ini
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = 'https://raw.githubusercontent.com/sebaxakerhtc/rdpwrap.ini/master/rdpwrap.ini'
+          Invoke-WebRequest -Uri $url -OutFile upstream.ini -TimeoutSec 120 -UseBasicParsing
+          $size = (Get-Item upstream.ini).Length
+          Write-Host "upstream.ini 大小: $size 字节"
+          if ($size -lt 100000) {
+            throw "upstream.ini 过小 ($size 字节)，疑似下载不完整，中止以免写入坏配置"
+          }
+
+      - name: 对比当前配置
+        id: changed
+        shell: pwsh
+        run: |
+          $a = (Get-FileHash rdpwrap.ini -Algorithm SHA256).Hash
+          $b = (Get-FileHash upstream.ini -Algorithm SHA256).Hash
+          Write-Host "仓库现有:  $a"
+          Write-Host "上游最新:  $b"
+          if ($a -eq $b) {
+            "changed=0" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
+            Write-Host "配置无变化，跳过提交与发布"
+          } else {
+            "changed=1" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
+            Write-Host "检测到配置更新"
+          }
+
+      - name: 提交新配置
+        if: steps.changed.outputs.changed == '1'
+        shell: pwsh
+        run: |
+          Move-Item -Force upstream.ini rdpwrap.ini
+          $updated = (Get-Content rdpwrap.ini | Select-String '^Updated=' | Select-Object -First 1).Line
+          Write-Host "新配置标记: $updated"
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add rdpwrap.ini
+          git commit -m "chore: sync upstream rdpwrap.ini ($updated)"
+          # checkout 后 HEAD 处于 detached 状态，需显式推送到默认分支
+          $branch = $env:GITHUB_REF_NAME
+          git push origin "HEAD:$branch"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host '推送冲突，拉取变基后重试'
+            git pull --rebase origin $branch
+            git push origin "HEAD:$branch"
+          }
+          $sha = git rev-parse HEAD
+          "sha=$sha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding ascii -Append
+          Write-Host "已推送, commit: $sha"
+
+      - name: 编译中文面板（确保打包产物最新）
+        if: steps.changed.outputs.changed == '1'
+        shell: pwsh
+        run: |
+          dotnet build src/RDPCnC.csproj -c Release -p:UseSharedCompilation=false
+          Copy-Item -Force 'src/bin/Release/net48/RDPCnC-CN.exe' 'bin/RDPCnC-CN.exe'
+
+      - name: 打包发布压缩包
+        if: steps.changed.outputs.changed == '1'
+        shell: pwsh
+        run: ./scripts/build-package.ps1
+
+      - name: 发布 GitHub Release
+        if: steps.changed.outputs.changed == '1'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $date = Get-Date -Format 'yyyy-MM-dd'
+          $tag = "ini-$date"
+          $zipPath = (Get-ChildItem dist/*.zip | Select-Object -First 1).FullName
+          $notes = @"
+          rdpwrap.ini 已同步至上游最新版。
+          包含完整中文套件（中文脚本 + 中文文档 + 中文配置面板）。
+          "@
+          $updated = (Get-Content rdpwrap.ini | Select-String '^Updated=' | Select-Object -First 1).Line
+          try {
+            gh release create $tag $zipPath --title "配置更新 $date ($updated)" --notes $notes
+            Write-Host "已创建 release: $tag"
+          } catch {
+            Write-Host "release 已存在或创建失败，尝试上传资产: $tag"
+            gh release upload $tag $zipPath --clobber
+          }

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RDPWrap 中文套件 - 使用说明</title>
+<style>
+:root {
+  --bg: #f8f9fa; --card: #ffffff; --border: #e0e0e0; --text: #333; --muted: #888;
+  --accent: #0078d4; --success: #107c10; --warn: #d83b01;
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+body { margin: 0; padding: 0; background: var(--bg); color: var(--text); line-height: 1.7; }
+.container { max-width: 900px; margin: 0 auto; padding: 30px 20px; }
+.hero { background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); color: #fff; padding: 40px 20px; margin-bottom: 30px; }
+.hero h1 { margin: 0 0 10px; font-size: 28px; }
+.hero p { margin: 0; opacity: 0.9; font-size: 15px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+.card-title { font-size: 18px; font-weight: 600; margin: 0 0 16px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+.step { display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start; }
+.step-num { flex-shrink: 0; width: 32px; height: 32px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+.step-body { flex: 1; }
+.step-body strong { display: block; margin-bottom: 4px; }
+code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13px; font-family: "Cascadia Code", "Consolas", monospace; }
+pre { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+pre code { background: none; padding: 0; color: inherit; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+th, td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; }
+th { background: #f0f5fa; font-weight: 600; }
+.warn-box { background: #fff4e5; border-left: 4px solid var(--warn); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; }
+.footer { text-align: center; padding: 30px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <h1>🖥 RDPWrap 中文套件</h1>
+    <p>Windows 多用户远程桌面 · 中文脚本 · 中文配置面板 · 配置自动同步</p>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="card">
+  <div class="card-title">📦 包含内容</div>
+  <table>
+    <tr><th>文件</th><th>说明</th></tr>
+    <tr><td>RDPW_Installer.exe / RDPW_Uninstaller.exe</td><td>安装器 / 卸载器</td></tr>
+    <tr><td><strong>RDPCnC-CN.exe</strong></td><td><strong>中文配置面板</strong>（自研，功能对齐官方英文面板）</td></tr>
+    <tr><td>rdpwrap.ini</td><td>补丁配置（自动同步上游最新）</td></tr>
+    <tr><td>install_cn.bat / uninstall_cn.bat / update_cn.bat</td><td>中文安装 / 卸载 / 更新脚本</td></tr>
+    <tr><td>docs/</td><td>中文使用说明</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-title">🚀 安装步骤</div>
+  <div class="step"><div class="step-num">1</div><div class="step-body"><strong>关闭杀毒软件</strong>Windows Defender 等可能误报，安装前临时关闭</div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body"><strong>以管理员身份运行</strong>右键 install_cn.bat → 以管理员身份运行</div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body"><strong>添加排除项</strong>把 C:\Program Files\RDP Wrapper 加入杀软排除，然后重新开启杀软</div></div>
+  <pre><code>Add-MpPreference -ExclusionPath "C:\Program Files\RDP Wrapper\"</code></pre>
+</div>
+
+<div class="card">
+  <div class="card-title">🖥 中文配置面板（RDPCnC-CN.exe）</div>
+  <p>双击即用，全中文界面，功能对齐官方英文面板，可与英文版共存：</p>
+  <table>
+    <tr><th>区域</th><th>内容</th></tr>
+    <tr><td>诊断信息</td><td>Wrapper 状态 · 服务状态 · 监听器状态 · termsrv 版本 · 支持级别（绿色=正常，红色=异常，2 秒自动刷新）</td></tr>
+    <tr><td>常规设置</td><td>启用远程桌面 · RDP 端口 · 每用户单会话 · 隐藏登录用户 · 未注册 RemoteApps</td></tr>
+    <tr><td>身份验证模式</td><td>仅图形验证 / 默认 RDP 验证 / 网络级验证 (NLA，推荐)</td></tr>
+    <tr><td>会话影子模式</td><td>禁用 / 经同意控制 / 不须同意控制 / 经同意查看 / 不须同意查看</td></tr>
+    <tr><td>操作按钮</td><td>应用设置 · 更新配置（官方源/国内镜像）· 重启服务 · 系统设置 · 测试连接</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-title">🔄 更新配置</div>
+  <ul>
+    <li>双击 <code>update_cn.bat</code>（可选官方源 / 国内镜像）</li>
+    <li>或面板点「更新配置」按钮</li>
+    <li>安装器已创建开机自动更新任务，通常无需手动操作</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="card-title">❓ 常见问题</div>
+  <p><strong>Q：杀软报毒？</strong> — 注入系统服务的行为导致误报，非病毒。安装前关杀软，安装后加排除。</p>
+  <p><strong>Q：显示 [不支持]？</strong> — 系统版本不在 ini 支持列表，更新配置到最新，或等待上游更新。</p>
+  <p><strong>Q：远程连不上？</strong> — 检查防火墙 3389 端口、面板三状态、账号密码、路由器端口转发。</p>
+  <p><strong>Q：多用户同时登录？</strong> — 默认支持不同账号同时登录；同账号多人需取消「每用户限制单会话」。</p>
+</div>
+
+<div class="warn-box">
+  <strong>⚠ 免责声明</strong><br>
+  本工具违反微软 Windows EULA（多会话为 Server 付费功能）。仅供个人学习、家庭使用，商业环境请购买正版 Windows 专业版 / Server 授权。使用风险自负。
+</div>
+
+</div>
+
+<div class="footer">
+  <p>RDPWrap-CN v1.0.0 · Apache License 2.0 · RDP Wrapper Library by Stas'M / mod by sebaxakerhtc</p>
+</div>
+
+</body>
+</html>

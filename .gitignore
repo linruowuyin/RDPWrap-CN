@@ -1,0 +1,16 @@
+# æ—¥å¿—ä¸Žä¸´æ—¶æ–‡ä»¶
+*.log
+rdpwrap.txt
+
+# ç³»ç»Ÿæ–‡ä»¶
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# æž„å»ºäº§ç‰©
+dist/
+upstream.ini
+
+# .NET ¹¹½¨²úÎï
+src/bin/
+src/obj/
