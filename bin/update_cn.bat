@@ -41,9 +41,9 @@ goto done
 :done
 ping -n 3 localhost >nul
 echo.
-echo   更新完成，正在打开配置面板...
-if exist "C:\Program Files\RDP Wrapper\RDP_CnC.exe" (
-  cmd.exe /C start "" "C:\Program Files\RDP Wrapper\RDP_CnC.exe"
+echo   更新完成，正在打开中文配置面板...
+if exist "C:\Program Files\RDP Wrapper\RDPCnC-CN.exe" (
+  cmd.exe /C start "" "C:\Program Files\RDP Wrapper\RDPCnC-CN.exe"
 )
 goto :end
 

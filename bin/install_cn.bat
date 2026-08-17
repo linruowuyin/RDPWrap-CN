@@ -40,18 +40,24 @@ if exist "C:\Program Files\RDP Wrapper\" (
 
 echo [3/3] 完成收尾...
 echo.
+echo   正在将中文配置面板复制到安装目录...
+if exist "C:\Program Files\RDP Wrapper\" (
+  copy /Y "%~dp0RDPCnC-CN.exe" "C:\Program Files\RDP Wrapper\RDPCnC-CN.exe" >nul 2>&1
+  echo       已添加中文配置面板。
+)
+echo.
 echo ============================================
 echo   安装完成！
 echo.
 echo   请将以下目录加入杀毒软件排除列表:
 echo   C:\Program Files\RDP Wrapper
 echo.
-echo   正在打开配置面板...
+echo   正在打开中文配置面板...
 echo ============================================
-if exist "C:\Program Files\RDP Wrapper\RDP_CnC.exe" (
-  cmd.exe /C start "" "C:\Program Files\RDP Wrapper\RDP_CnC.exe"
+if exist "C:\Program Files\RDP Wrapper\RDPCnC-CN.exe" (
+  cmd.exe /C start "" "C:\Program Files\RDP Wrapper\RDPCnC-CN.exe"
 ) else (
-  echo   未找到配置面板，请检查安装是否成功。
+  echo   未找到中文面板，请检查安装是否成功。
 )
 pause
 exit /b 0
