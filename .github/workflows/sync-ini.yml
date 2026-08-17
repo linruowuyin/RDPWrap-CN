@@ -122,10 +122,8 @@ jobs:
           包含完整中文套件（中文脚本 + 中文文档 + 中文配置面板）。
           "@
           $updated = (Get-Content rdpwrap.ini | Select-String '^Updated=' | Select-Object -First 1).Line
-          try {
-            gh release create $tag $zipPath --title "配置更新 $date ($updated)" --notes $notes
-            Write-Host "已创建 release: $tag"
-          } catch {
-            Write-Host "release 已存在或创建失败，尝试上传资产: $tag"
+          gh release create $tag $zipPath --title "配置更新 $date ($updated)" --notes $notes
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host 'release 已存在，上传资产: $tag'
             gh release upload $tag $zipPath --clobber
           }
