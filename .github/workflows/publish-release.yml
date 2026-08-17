@@ -35,8 +35,6 @@ jobs:
 
       - name: 创建 Release 并上传
         shell: pwsh
-        env:
-          GH_TOKEN: *** github.token }}
         run: |
           $ver = '${{ github.event.inputs.version }}'
           $zip = (Get-ChildItem "dist/RDPWrap-CN-$ver.zip").FullName
