@@ -1,0 +1,57 @@
+name: 发布正式版本 Release
+
+# 手动触发（workflow_dispatch），带版本号参数
+# 用法: Actions → 本工作流 → Run workflow → 输入版本号（如 1.0.0）
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号（如 1.0.0）'
+        required: true
+        default: '1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 编译中文面板
+        shell: pwsh
+        run: |
+          dotnet build src/RDPCnC.csproj -c Release -p:UseSharedCompilation=false
+          Copy-Item -Force 'src/bin/Release/net48/RDPCnC-CN.exe' 'bin/RDPCnC-CN.exe'
+
+      - name: 打包
+        shell: pwsh
+        run: ./scripts/build-package.ps1 -Version ${{ github.event.inputs.version }}
+
+      - name: 创建 Release 并上传
+        shell: pwsh
+        env:
+          GH_TOKEN: *** github.token }}
+        run: |
+          $ver = '${{ github.event.inputs.version }}'
+          $zip = (Get-ChildItem "dist/RDPWrap-CN-$ver.zip").FullName
+          $notes = @"
+          ## RDPWrap-CN v$ver
+
+          让 Windows 家庭版 / 标准版支持远程桌面被控 + 多用户同时登录。
+
+          ### 安装方法
+          1. 解压 zip，关闭杀毒软件
+          2. 右键 install_cn.bat → 以管理员身份运行
+          3. 把 C:\Program Files\RDP Wrapper 加入杀软白名单
+          4. 完成，自动弹出中文配置面板
+
+          详见仓库 README。
+          "@
+          gh release create "v$ver" $zip --title "v$ver" --notes $notes
+          Write-Host "release v$ver published"
